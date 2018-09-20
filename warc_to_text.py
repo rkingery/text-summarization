@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from justext import justext, get_stoplist
 from tqdm import tqdm
 import pandas as pd
+from pathlib import Path
 import re
 
 def clean_html(html):
@@ -64,14 +65,7 @@ def process_warc(file_path):
                     html_raw = record.content_stream().read()
                     html = html_raw.decode('utf-8')
                     html = clean_html(html)
-                    #if isinstance(html,type(None)):
-                    #    continue           
-                    #html = re.sub('\n+','\n',html)
-                    #html = re.sub('[\r\f\v]','',html)
-                    #html = re.sub('\t+',' ',html)
                     text = get_text_jt(html_raw)
-                    #if isinstance(text,type(None)):
-                    #    continue
                     text = re.sub('\n+','. ',text)
                     text = re.sub('[\r\f\v]','',text)
                     text = re.sub('\t+',' ',text)
@@ -85,7 +79,11 @@ def process_warc(file_path):
     return df
 
 if __name__ == '__main__':
-    warc = '/Users/ryankingery/desktop/6_Shooting_Douglas_2018/Shooting_Douglas_2018_big.warc'
-    repo_path = '/Users/ryankingery/Repos/Big-Data-Text-Summarization/'
-    df = process_warc(warc)
-    #df.to_csv(repo_path+'html_and_text_big.csv')
+    data_path = '/Users/ryankingery/Repos/text-summarization/data/'
+    if not Path(data_path).exists():
+        Path(data_path).mkdir()
+    if not Path(data_path+'html_and_text_big.csv').exists():
+        df = process_warc(data_path+'Shooting_Douglas_2018_big.warc')
+        df.to_csv(data_path+'html_and_text_big.csv')
+    else:
+        df = pd.read_csv(data_path+'html_and_text_big.csv',index_col=0)
