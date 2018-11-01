@@ -60,7 +60,8 @@ def process_text(row):
     text = re.sub(r"[^\w\s'\$]",'',text)
     #text = text.translate(str.maketrans('', '', string.punctuation))
     # remove stop words
-    text = ' '.join(word for word in text.split() if word not in stopwords.words('english'))
+    stops = stopwords.words('english')
+    text = ' '.join(word for word in text.split() if word not in stops)
     # stem words
 #    stemmer = SnowballStemmer("english")
 #    stemmed_text = ''
