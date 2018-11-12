@@ -1,5 +1,11 @@
-# converts warc file into a pandas dataframe
+# converts warc file into a pandas dataframe type csv: html_and_text_big.csv
 # each row of dataframe contains url,html,text for a specific html file
+
+# also saves a csv of filtered text, containing justext extracted text: text_filtered_big.csv
+# stripped of non-ascii and filtered for relevance (Parkland shooting)
+
+# default text extractor is justext (get_text_js)
+# can also use beautiful soup for text extractor (get_text_bs)
 
 from warcio.archiveiterator import ArchiveIterator
 from bs4 import BeautifulSoup
@@ -8,6 +14,10 @@ from tqdm import tqdm
 import pandas as pd
 from pathlib import Path
 import re
+
+global spam
+spam = ['advertisement', 'getty', 'published', 'javascript', 'updated', 'jpghttps',
+        'posted', 'read more', 'photo gallery', 'play video', 'caption']
 
 def clean_html(html):
     soup = BeautifulSoup(html, 'html.parser')
@@ -31,9 +41,7 @@ def get_text_bs(html):
     text = body.get_text(separator='\n')
     return text
 
-def no_spam(text):
-    spam = ['advertisement', 'getty', 'published', 'javascript', 'updated', 'update',
-            'posted', 'read more', 'photo gallery', 'play video', 'caption']
+def filter_pages(text):
     if not isinstance(text,str):
         print(text)
     for f in spam:
@@ -47,7 +55,7 @@ def get_text_jt(html):
     paragraphs = justext(html, get_stoplist("English"))
     for paragraph in paragraphs:
         if not paragraph.is_boilerplate:
-            if len(paragraph.text) > 15 and no_spam(paragraph.text):
+            if len(paragraph.text) > 15 and filter_pages(paragraph.text):
                 text.append(paragraph.text)
             #else:
             #    print(len(paragraph.text),' :: ',paragraph.text)
@@ -66,24 +74,41 @@ def process_warc(file_path):
                     html = html_raw.decode('utf-8')
                     html = clean_html(html)
                     text = get_text_jt(html_raw)
-                    text = re.sub('\n+','. ',text)
-                    text = re.sub('[\r\f\v]','',text)
-                    text = re.sub('\t+',' ',text)
-                    text = re.sub('[ ]{2,}',' ', text)
                     rows.append([url,html,text])
             except:
                 dropped_count += 1
-                print(dropped_count,'files dropped so far')
+                #print(dropped_count,'files dropped so far')
                 continue
+    print(dropped_count,'files dropped due to read errors')
     df = pd.DataFrame(data=rows,columns=['url','html','text'])
     return df
 
+def filter_text(df):
+    text = df.text.dropna()
+    text = text.apply(lambda x: re.sub('\n+','. ',x))
+    text = text.apply(lambda x: re.sub('[\r\f\v]','',x))
+    text = text.apply(lambda x: re.sub('\t+',' ',x))
+    text = text.apply(lambda x: re.sub('[ ]{2,}',' ',x))
+    text = text.apply(lambda x: x.encode("ascii", errors="ignore").decode())
+    text = text.apply(lambda x: ' '.join(word for word in x.split() if word not in spam))
+    relevant = text.apply(lambda x: ('parkland' in x.lower() or \
+                                   'marjory stoneman douglas' in x.lower()) and \
+                                    'shooting' in x.lower())
+    nonempty = text.apply(lambda x: len(x)>0)
+    text = text[relevant & nonempty]
+    text = pd.DataFrame(data=text,columns=['text'])
+    return text
+
 if __name__ == '__main__':
-    data_path = '/Users/ryankingery/Repos/text-summarization/data/'
-    if not Path(data_path).exists():
-        Path(data_path).mkdir()
-    if not Path(data_path+'html_and_text_big.csv').exists():
-        df = process_warc(data_path+'Shooting_Douglas_2018_big.warc')
-        df.to_csv(data_path+'html_and_text_big.csv')
+    data_path = Path('/Users/ryankingery/Repos/text-summarization/data/')
+    if not data_path.exists():
+        data_path.mkdir()
+    if not (data_path/'html_and_text_big.csv').exists():
+        df = process_warc(data_path/'Shooting_Douglas_big.warc')
+        df.to_csv(data_path/'html_and_text_big.csv')
+    if not (data_path/'text_filtered_big.csv').exists():
+        text = filter_text(df)
+        text.to_csv(data_path/'text_filtered_big.csv')
     else:
-        df = pd.read_csv(data_path+'html_and_text_big.csv',index_col=0)
+        df = pd.read_csv(data_path/'html_and_text_big.csv',index_col=0)
+        text = pd.read_csv(data_path/'text_filtered_big.csv',index_col=0, header=None)
