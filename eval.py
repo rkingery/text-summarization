@@ -106,3 +106,10 @@ def cov_entity(predict_path, golden_path):
 if __name__ == "__main__":
     golden_path = os.getcwd()+'/golden/'
     predict_path = os.getcwd()+'/predict/'
+    
+    rouge_para(predict_path, golden_path)
+    rouge_sent(predict_path, golden_path)
+    cov_entity(predict_path, golden_path)
+    
+    
+    
