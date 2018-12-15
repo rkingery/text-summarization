@@ -1,2 +1,11 @@
-# text-summarization
-Files for Big Data Text Summarization class and its research extensions
+# Abstractive Text Summarization of the Parkland Shooting Collection
+
+We analyze various ways to perform abstractive text summarization on an entire collection of news articles. We specifically seek to summarize the collection of web-archived news articles relating to the 2018 shooting at Marjory Stoneman Douglas High School in Parkland, Florida. The original collection contains about 10,100 archived web pages that mostly relate to the shooting, which after pre-processing reduces to about 3,900 articles that directly relate to the shooting.
+
+We then explore several ways to generate abstractive summaries for the collection using deep learning methods. Since current deep learning methods for abstract summarization are only capable of summarizing text at the single-article level or below, to perform summarization on our collection, we identify a set of representative articles from the collection, summarize each of those articles using our deep learning models, and then concatenate those summaries together to produce a summary for the entire collection.
+
+To identify the representative articles to summarize we investigate various unsupervised methods to partition the space of articles into meaningful groups. We try choosing these articles by random sampling from the collection, by using topic modeling, and by sampling from clusters obtained from clustering on Doc2Vec embeddings. To summarize each individual article we explore various state of the art deep learning methods for abstractive summarization: a sequence-to-sequence model, a pointer generator network, and a reinforced extractor-abstractor network.
+
+To evaluate the quality of our summaries we employ two methods. The first is a subjective method, where each person subjectively ranked the quality of each summary. The second is an objective method which used various ROUGE metrics to compare each summary to an independently-generated gold standard summary. We found that most ROUGE scores were pretty low overall, with only the pointer-generator network on random articles picking up a ROUGE score above 0.15. This suggests that such deep learning techniques still have a lot of room for improvement if they are to be viable for collection summarization.
+
+To see the report and other results, go [here](https://vtechworks.lib.vt.edu/handle/10919/86370).
